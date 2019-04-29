@@ -12,10 +12,13 @@ class: center, middle
 # /whois arrfab 
 
 ---
-```bash 
-Disclaimer
-```
+
+# Disclaimer
+
 ### Depending on your SysAdmin experience, we'll (re)discover basic things ...
+
+--
+
 #### and then we'll add tips ....
 
 ---
@@ -40,7 +43,7 @@ Disclaimer
 Can be used for plenty of things (shell, tunnel, autossh, vpn, sshuttle)
 
 ---
-### ssh usage for something else than shell
+## SSH usage for something else than shell
  * Shell multiplexers
   * pssh
   * mussh
@@ -54,7 +57,7 @@ Can be used for plenty of things (shell, tunnel, autossh, vpn, sshuttle)
 ???
 sshuttle lets you connect to remote network/transparently tunnel remote subnet from your your local node
 ---
-##SSHD authentication (reminder)
+## SSHD authentication (reminder)
  * Host itself
   * /etc/ssh/ssh__host_{rsa,ecdsa,ed25519}_key (private)
   * /etc/ssh/ssh__host_{rsa,ecdsa,ed25519}_key.pub (public)
@@ -148,12 +151,12 @@ Now we just need to "sign" (on the CA host)  the .pub sshd host key files
 ssh-keygen -s {{ ssh_ca_host_key }} \
   -I {{ inventory_hostname }} \
   -h \
-  -Z {{ inventory_hostname }} ssh_host*_key.pub
+  -Z {{ inventory_hostname }} ssh_host_rsa_key.pub
 ```
 That will produce a -cert.pub file (like ssh_host_rsa_key-cert.pub), that you just need to copy to new server under /etc/ssh/
 
 ---
-#### SSH CA / sshd side
+## SSH CA / sshd side
 And now you have to inform sshd that you can present a host certificate, signed by CA, in /etc/ssh/sshd_config
 ```bash
 # Presenting ssh host pub cert signed by CA host
@@ -166,7 +169,7 @@ and reload
 ```
 
 ---
-#### SSH CA / Client side
+## SSH CA / Client side
 Declare that you trust your CA (part of the .pub key you created initially in step 1) in either:
  * ~/.ssh/known_hosts (user)
  * /etc/ssh/ssh_known_hosts (system-wide)
@@ -177,7 +180,7 @@ Example for CentOS.org nodes:
 ```
 
 ---
-### SSH CA example
+## SSH CA example
 ssh git.centos.org -v
 ```bash
 ...
@@ -193,7 +196,7 @@ ssh -v git.centos.org
 then known_hosts and see the diff
 
 ---
-### Some ansible links for this
+## Some ansible links for this
 * https://github.com/CentOS/ansible-infra-playbooks/blob/master/adhoc-sshd_sign_host_key.yml
 * https://github.com/centos/ansible-role-sshd
 * https://github.com/centos/ansible-role-ansible-host
@@ -246,8 +249,42 @@ Host *
  ControlPersist 120m
 ```
 
+--
+Can also be configured in ansible.cfg (through ssh_args) ...
+##### Idea : job that collect facts and keep connections ....
+
+---
+### Ansible speed-up 
+What's consuming a *lot* of time for nothing during playbook execution ?
+
+--
+
+### Facts gathering ! 
+
+--
+from our ansible.cfg (per inventory)
+```ini
+# Adding some interesting stats
+callback_whitelist = profile_tasks, timer
+# Switch to smart so also using cached facts
+gathering = smart
+fact_caching = jsonfile
+fact_caching_connection = .ansible_cache
+
+```
+
 ---
 ### Mitogen (but in next talks ....) :-)
+
+```ini
+{% if item.use_mitogen %}
+strategy_plugins = {{ item.base_path }}/mitogen/ansible_mitogen/plugins/strategy
+strategy = mitogen_linear
+{% else %}
+strategy = linear
+{% endif %}
+
+```
 
 ---
 class: center, middle
