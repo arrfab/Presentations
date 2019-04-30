@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Presentation</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Ubuntu Mono'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; color: #999999; background-color: #80a000 ;}
+	
+	
+blockquote {
+    border-left: 5px solid #cccccc;
+    padding-left: 1em;
+    margin: 1em -2em;
+    font-style: italic;
+    color: #999999;
+}
+
+.remark-slide-content h1 {
+ 	font-size: 56px;
+	color: #273552;
+}
+
+.remark-slide-content {
+	display: table-cell;
+	vertical-align: middle;
+	padding: 0 6em;
+	border-bottom: 20px solid #273552;
+	font-size: 24px;
+}
+
+.remark-slide-number {
+	display: none;
+}
+
+
+@media print {
+  .remark-slide-scaler {
+    width: 100% !important;
+    height: 100% !important;
+    transform: scale(1) !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
+}
+
+
+
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+
+# (Re)discovering the ssh tips for Ansible
+## (CentOS.org infra use case)
+### Fabian Arrotin
+#### arrfab@centos.org, @arrfab
+
+???
+These are some notes presented in presenter mode and not on screen
+
+---
+class: center, middle
+
+# /whois arrfab 
+
+---
+
+# Disclaimer
+
+### Depending on your SysAdmin experience, we'll (re)discover basic things ...
+
+--
+
+#### and then we'll add tips ....
+
+---
+# Agenda
+
+* SSH intro
+* Authentication[s]
+ * Hosts
+ * Clients
+* Accessing hosts behind other hosts (bastion/jump hosts)
+* Speeding up sshd 
+  * ssh clients
+  * Ansible
+
+---
+# SSH
+* Secure Shell
+* Crypto (PKI)
+* Secure channel (client-server)
+
+???
+Can be used for plenty of things (shell, tunnel, autossh, vpn, sshuttle)
+
+---
+## SSH usage for something else than shell
+ * Shell multiplexers
+  * pssh
+  * mussh
+  * clusterssh (cssh)
+ * TCP/IP tunnels for ports
+  * rsync /localdir/ remoteuser@remotehost:/remotedir/
+  * ssh -L 8000:remote:80
+  * autossh (keep ports opened for you)
+  * sshuttle : _Transparent Proxy VPN_ 
+
+???
+sshuttle lets you connect to remote network/transparently tunnel remote subnet from your your local node
+---
+## SSHD authentication (reminder)
+ * Host itself
+  * /etc/ssh/ssh__host_{rsa,ecdsa,ed25519}_key (private)
+  * /etc/ssh/ssh__host_{rsa,ecdsa,ed25519}_key.pub (public)
+--
+
+ * Client[s]
+  * Password 
+  * PKI (ssh, gpg)
+  * GSSAPI (Kerberos, NTLM)
+
+---
+
+## First connection on CentOS 6 
+####(openssh-5.3p1-124.el6_10.x86_64)
+```bash
+ssh centos@client6.lon1.centos.org
+The authenticity of host 'client6.lon1.centos.org (172.29.33.45)' can't be established.
+RSA key fingerprint is SHA256:Hu7rwmk/Ik2n9PkwC780IBn1FkU5g9pcTal6hAEZJdI.
+RSA key fingerprint is MD5:29:63:c6:76:92:ad:5c:a9:8e:84:b5:fa:59:93:b4:79.
+Are you sure you want to continue connecting (yes/no)?
+```
+---
+## First connection on CentOS 7 
+####(openssh-7.4p1-16.el7.x86_64)
+```bash
+ssh centos@client7.lon1.centos.org
+The authenticity of host 'client7.lon1.centos.org (172.29.33.43)' can't be established.
+ECDSA key fingerprint is SHA256:SgNEoy8SJ/ibA3Mkb3e9sW2q1w41XwCgjI+j3t0JT8E.
+ECDSA key fingerprint is MD5:ec:c2:2a:84:58:01:49:b1:56:97:a5:82:87:0d:5b:e1.
+Are you sure you want to continue connecting (yes/no)?
+
+```
+
+???
+Keep that RSA vs ECDSA diff in mind for later (SSH cert for hosts)
+
+---
+## Bypassing checks (BAD !!!!!)
+( /etc/ssh/ssh_config or ~/.ssh/config)
+```ini
+Host *
+ StrictHostKeyChecking no
+```
+
+---
+## Bypassing host checks (BAD !!!!)
+#### Ansible version
+(/etc/ansible/ansible.cfg or .ansible.cfg , etc)
+```ini
+[defaults]
+host_key_checking = False
+
+```
+
+---
+# SSHD certificates for hosts
+## HTTPS/TLS analogy
+* Server generates key/pub
+* CSR signed by CA
+* Client (trusting CA) access https server
+* Presents pub certs, signed by CA
+* Ack
+
+---
+## (Open)SSH CA setup ?
+
+--
+
+### Yes we can ! 
+
+---
+## SSH Certficate Authority
+Like "usual" : create a key:
+
+```bash
+ssh-keygen -t rsa -f ~/.ssh/ca_host_key
+tree ~/.ssh/
+/home/user/.ssh/
+├── ca_host_key
+└── ca_host_key.pub
+
+```
+--
+Search for 'CERTIFICATES' in _man ssh-keygen_
+
+
+---
+## SSH CA / sshd side
+Now we just need to "sign" (on the CA host)  the .pub sshd host key files
+```bash
+ssh-keygen -s {{ ssh_ca_host_key }} \
+  -I {{ inventory_hostname }} \
+  -h \
+  -Z {{ inventory_hostname }} ssh_host_rsa_key.pub
+```
+That will produce a -cert.pub file (like ssh_host_rsa_key-cert.pub), that you just need to copy to new server under /etc/ssh/
+
+---
+## SSH CA / sshd side
+And now you have to inform sshd that you can present a host certificate, signed by CA, in /etc/ssh/sshd_config
+```bash
+# Presenting ssh host pub cert signed by CA host
+# Defaulting to RSA for now due to incompatibility with older openssh clients , still on el6
+HostCertificate /etc/ssh/ssh_host_rsa_key-cert.pub
+```
+and reload
+```bash
+ systemctl restart sshd
+```
+
+---
+## SSH CA / Client side
+Declare that you trust your CA (part of the .pub key you created initially in step 1) in either:
+ * ~/.ssh/known_hosts (user)
+ * /etc/ssh/ssh_known_hosts (system-wide)
+
+Example for CentOS.org nodes:
+```bash
+@cert-authority *.centos.org ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDXmhva/yVOS6y/sR1Pjd+Gflzkl7azfl3ZIhex5kSHilUjT3DSjfXK0TgSHT93BCKs1/mT84ZKv6s+Ulfc3kC9aykJQnkWJ6I6CjIgfIM547VT2Egx5fKJZ/7yRedYf6HoVPZSAW5WYKZ0fq/DDoAFUuZJkkp3QEzh6TUiXif9qjCu3liXNgkS2uVIWc7+1QTLRxqU3/MCD1YxuOL8ShyMSHlGJTRMMTYq6aAFmlQ/FsA8deb9HeR3PaAZx7Q7jqmiJD5cx9XtrmgM4CCZNFxP9i0s+L7yDKzFQ1ecm1/vzouOsAVcSh7MiAexuBLgbUdhmBDGVEJYQDNENKOdaoiP
+```
+
+---
+## SSH CA example
+ssh git.centos.org -v
+```bash
+...
+debug1: Server host certificate: ssh-rsa-cert-v01@openssh.com SHA256:nOTFfaeWJjilN5uFPeOSyscBABG2zLe3w/W00dBqE64, serial 0 ID "git1.centos.org" CA ssh-rsa SHA256:wLEN4HjckDqT7HPXzWRZ7yYQSDOj0JOh+fOt9IQfMwE valid forever
+debug1: Host 'git.centos.org' is known and matches the RSA-CERT host certificate.
+debug1: Found CA key in /home/centos/.ssh/known_hosts:1
+...
+```
+
+???
+Demo on dev-loadays.lon1.centos.org
+ssh -v git.centos.org
+then known_hosts and see the diff
+
+---
+## Some ansible links for this
+* https://github.com/CentOS/ansible-infra-playbooks/blob/master/adhoc-sshd_sign_host_key.yml
+* https://github.com/centos/ansible-role-sshd
+* https://github.com/centos/ansible-role-ansible-host
+
+---
+## Accessing nodes directly behind other "bastion" hosts
+#### Client can reach bastion host , and bastion can reach *.internal.corp.dev , but Client can't directly reach internal
+~/.ssh/config to the Rescue
+```bash
+Host bastion
+ Hostname bastion.pub.corp.dev
+ ProxyCommand none
+ 
+Host *.internal.corp.dev
+ ProxyCommand ssh bastion -W %h:p%
+```
+---
+## Accessing nodes through bastion hosts - Ansible version
+### Using group and group_vars
+Let's create a "proxied" file in our inventory and have it populated with some nodes/groups
+```ini
+[proxied-dc1]
+node1
+node2
+[proxied-dc2]
+node3
+node4
+```
+---
+## Now let's use ssh variables to say to use ProxyCommand
+```bash
+cat group_vars/proxied-dc1
+ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q user@bastion.dc1.domain.com"'
+```
+
+---
+## Ansible / Mitogen
+Same concept but use **mitogen_via**
+#### More on Mitogen later ...
+
+---
+### SSH ControlMaster
+#### in a need to "speed up" connections ? you can let those "open"
+```bash
+Host * 
+ GSSAPIAuthentication no
+ ForwardAgent yes
+ ControlMaster auto
+ ControlPath /tmp/ssh_mux_%h_%p_%r
+ ControlPersist 120m
+```
+
+--
+Can also be configured in ansible.cfg (through ssh_args) ...
+##### Idea : job that collect facts and keep connections ....
+
+---
+### Ansible speed-up 
+What's consuming a *lot* of time for nothing during playbook execution ?
+
+--
+
+### Facts gathering ! 
+
+--
+from our ansible.cfg (per inventory)
+```ini
+# Adding some interesting stats
+callback_whitelist = profile_tasks, timer
+# Switch to smart so also using cached facts
+gathering = smart
+fact_caching = jsonfile
+fact_caching_connection = .ansible_cache
+
+```
+
+---
+### Mitogen (but in next talks ....) :-)
+
+```ini
+{% if item.use_mitogen %}
+strategy_plugins = {{ item.base_path }}/mitogen/ansible_mitogen/plugins/strategy
+strategy = mitogen_linear
+{% else %}
+strategy = linear
+{% endif %}
+
+```
+
+---
+class: center, middle
+# Q&A
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
