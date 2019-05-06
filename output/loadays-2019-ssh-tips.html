@@ -41,6 +41,10 @@ blockquote {
 	display: none;
 }
 
+@page {
+  size: 1024px 768px;
+  margin: 0;
+}
 
 @media print {
   .remark-slide-scaler {
@@ -113,7 +117,8 @@ Can be used for plenty of things (shell, tunnel, autossh, vpn, sshuttle)
   * mussh
   * clusterssh (cssh)
  * TCP/IP tunnels for ports
-  * rsync /localdir/ remoteuser@remotehost:/remotedir/
+  * rsync /localdir/ \
+    remoteuser@remotehost:/remotedir/
   * ssh -L 8000:remote:80
   * autossh (keep ports opened for you)
   * sshuttle : _Transparent Proxy VPN_ 
@@ -129,7 +134,7 @@ sshuttle lets you connect to remote network/transparently tunnel remote subnet f
 
  * Client[s]
   * Password 
-  * PKI (ssh, gpg)
+  * PKI (ssh, gpg, x509)
   * GSSAPI (Kerberos, NTLM)
 
 ---
@@ -177,6 +182,54 @@ host_key_checking = False
 ```
 
 ---
+# How to validate centrally ?
+* Distribute ssh known-hosts file ? (can be large)
+
+--
+* SSHFP dns records ?
+
+--
+* CA ?
+
+
+---
+### SSH / DNS validation (SSHFP records)
+Once you have verified, you can generate SSHFP records easily : 
+```bash
+ssh-keygen -r git.centos.org
+git.centos.org IN SSHFP 1 1 9ec70a9a1b6c958235d33df0c60c7c6077a63d2a
+git.centos.org IN SSHFP 1 2 d4eaf3dc8093c1cdab783c635af1b609dc8c0fb8607dd35bb2325d7755c55249
+git.centos.org IN SSHFP 3 1 1124569ae79bf90b4fef233e31d6f94156a169e3
+git.centos.org IN SSHFP 3 2 876dc95cafc568348b16f6b0c805f1712d99f9fb9895762be52577834793d66a
+git.centos.org IN SSHFP 4 1 09884343d3e31f7ebf55d4c51d7b043846860428
+git.centos.org IN SSHFP 4 2 1fcee5a2fde5525bb8bc93a30d74c12fbe42eef03041e1a31293ff31b5eb9b68
+```
+And push that in your DNS zone file
+"fqdn, IN, SSHFP, Algorithm (integer), Fingerprint type (integer), Fingerprint (in hex)" 
+
+???
+Algorithm
+
+1 - RSA
+2 - DSA
+3 - ECDSA
+4 - Ed25519
+Fingerprint type
+Two fingerprint types are defined in SSHFP as of 2012. Each fingerprint type is represented by an integer. These are:
+
+1 - SHA-1
+2 - SHA-256
+
+
+---
+### SSH / DNS validation (SSHFP)
+#### Client side 
+Add this to your ~/.ssh/config (or /etc/ssh/ssh_config) :
+```ini
+VerifyHostKeyDNS yes 
+```
+	
+---
 # SSHD certificates for hosts
 ## HTTPS/TLS analogy
 * Server generates key/pub
@@ -193,7 +246,7 @@ host_key_checking = False
 ### Yes we can ! 
 
 ---
-## SSH Certficate Authority
+## SSH Certificate Authority
 Like "usual" : create a key:
 
 ```bash
@@ -315,7 +368,7 @@ Host *
 
 --
 Can also be configured in ansible.cfg (through ssh_args) ...
-##### Idea : job that collect facts and keep connections ....
+##### Idea : job that collects/cache facts and keep connections ....
 
 ---
 ### Ansible speed-up 
