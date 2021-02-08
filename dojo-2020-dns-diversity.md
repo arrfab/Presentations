@@ -11,7 +11,7 @@ These are some notes presented in presenter mode and not on screen
 class: center, middle, inverse
 
 # /whois arrfab 
-#### ops,infra,floor sweeper at centos.org
+#### ['ops','infra','floor sweeper'] @ centos.org
 ---
 # Agenda
 
@@ -74,7 +74,6 @@ Idea :
  * Create CNAME for _acme-challenge.centos.org => _acme-challenge.acme.centos.org
  * Delegates acme.centos.org 
  * Have that acme.centos.org zone 'dynamic' and controlled by acme.sh
-  * support nsupdate + key (through Ansible "delegate_to")
 
 ---
 # Bind
@@ -107,7 +106,7 @@ openssl s_client -host $host -port 443 -showcerts </dev/null 2>/dev/null \
   | sed -n '/BEGIN CERTIFICATE/,/END CERT/p' \
   | openssl x509 -text -noout|grep DNS
   
-DNS:*.dev.centos.org, DNS:dev.centos.org
+* DNS:*.dev.centos.org, DNS:dev.centos.org
 
 ```
 ---
