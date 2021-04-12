@@ -1,0 +1,131 @@
+
+# CPE Tech Talk
+## Running OpenShift 4.x as KVM virtual machine
+### Fabian Arrotin
+#### arrfab@centos.org, @arrfab
+
+???
+These are some notes presented in presenter mode and not on screen
+
+---
+class: center, middle, inverse
+
+# /whois arrfab 
+#### ['ops','infra','floor sweeper'] @ centos.org
+---
+# Agenda
+
+## Openshift 4.x summary
+ * What changed (RHCOS)
+ * How to *normally* install OCP
+ * Why in Virtual Machines ? 
+ * ... and how (with ansible driven deployment)
+
+---
+# OCP 4 / What's "new" ?
+
+ * No *classical* RHEL/CentOS host deploy with pkgs on top
+ * Deploying RHCOS (CoreOS)
+ * no kickstart, but ignition files to the rescue
+
+---
+# OCP 4 / where to normally deploy
+
+ * Cloud providers:
+  * AWS/EC2
+  * Azure
+  * GCP
+ * Bare Metal ! (yeah) 
+
+---
+# OCP 4 / deploy to bare-metal
+"usual" for people used to pxe/kickstart
+
+ * create pxe config
+ * expose internal http for ignition files + rhcos installer
+ * ipmi to boot node from network
+ * automated install
+ * Links:
+  * https://github.com/CentOS/ansible-infra-playbooks/blob/master/templates/ocp_pxeboot.j2
+  * https://github.com/CentOS/ansible-infra-playbooks/blob/master/adhoc-provision-ocp4-node.yml
+
+---
+# why OCP in VM for CentOS infra ?
+
+ * not enough bare-metal nodes
+ * but *beefy* nodes so can be used as hypervisors
+ * spreading of course roles on different hypervisors (like etcd nodes *not* on same hypervisor)
+
+---
+# VM refresh
+
+what's a Virtual Machine  ?
+ * just emulated hardware
+ * so *bare-metal* setup should work, right ?
+ 
+---
+# How to automate KVM guest deploy
+
+ * virt-install
+ * inject-initrd
+ * point anaconda to internal ks file
+```bash
+  --initrd-inject=/var/lib/libvirt/local-kickstarts/{{ inventory_hostname }}.cfg \
+{% if kvm_guest_arch == 'power9' or kvm_guest_arch == 'ppc64le' %}
+  --extra-args "console=hvc0 console=hvc1 net.ifnames=0 ks=file:/{{ inventory_hostname }}.cfg" \
+{% else %}
+  --extra-args "console=ttyS0 net.ifnames=0 ks=file:/{{ inventory_hostname }}.cfg" \
+{% endif %}
+```
+^ from https://github.com/CentOS/ansible-infra-playbooks/blob/master/templates/ansible-virt-install.j2
+
+---
+# How to know what to boot ?
+
+ * virt-install checks for a .treeinfo for the --location :
+
+```bash
+     -l, --location OPTIONS
+           Distribution tree installation source. virt-install can recognize certain distribution trees and fetches a
+           bootable kernel/initrd pair to launch the install.
+```
+ 
+So let's build one for OCP and point installer to it : 
+```bash
+[general]
+arch = x86_64
+family = Red Hat CoreOS
+platforms = x86_64
+version = {{ rhcos_version }}
+[images-x86_64]
+initrd = rhcos-{{ rhcos_version }}-x86_64-live-initramfs.x86_64.img
+kernel = rhcos-{{ rhcos_version }}-x86_64-live-kernel-x86_64
+```
+---
+# Then wrapper for virt-install, based on what we had
+```bash
+virt-install \
+  --name {{ inventory_hostname }} \
+  --vcpus {{ kvm_guest_vcpus }} \
+  --cpu host \
+  --ram  {{ kvm_guest_memory }} \
+  --disk path=/var/lib/libvirt/images/{{ inventory_hostname }}.qcow2,size={{ kvm_guest_disk_size }},format=qcow2,device=disk,bus=virtio,cache=none \
+  --nographics \
+  --network bridge={{ kvm_host_bridge }},model=virtio \
+  --hvm --accelerate \
+  --autostart --wait=-1 \
+  --extra-args "ip={{ ip }}::{{ gateway }}:{{ netmask }}:{{ inventory_hostname }}:{{ kvm_guest_vnic }}:none {% for ns in nameservers -%} nameserver={{ ns }} {% endfor -%} console=ttyS0 nomodeset rd.neednet=1 coreos.inst=yes coreos.inst.install_dev=vda coreos.live.rootfs_url={{ rhcos_install_rootfs_url }} coreos.inst.ignition_url={{ rhcos_ignition_file_url }} " \
+  --os-type linux --os-variant rhel7 \
+  --location  {{ rhcos_install_url }}
+
+```
+---
+class: center, middle
+# Demo time ? 
+YEAH ! [*] (well, let's try)
+
+
+---
+class: center, middle
+# Q&A
+
