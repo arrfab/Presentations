@@ -1,7 +1,11 @@
 #!/bin/bash
-usage (){
-echo "You need to call this script like this :"
-echo "$0 my-preso.md"
+RATIO=${2:-"4:3"}
+
+usage () {
+  echo "You need to call this script like this :"
+  echo "$0 my-preso.md"
+  echo "Optionally pass a second argument for the ratio (4:3 or 16:9) :"
+  echo "$0 my-preso.md 16:9"
 }
 
 if [ -z "$1" ] ; then
@@ -13,4 +17,4 @@ md_file="$1"
 echo rendering RemarkJS html output file to output/${md_file/.md}.html
 cat remarkjs/remarkjs-header.html > output/${md_file/.md}.html
 cat $md_file >> output/${md_file/.md}.html
-cat remarkjs/remarkjs-footer.html >> output/${md_file/.md}.html
+cat remarkjs/remarkjs-footer.html | sed -e "s/%RATIO%/${RATIO}/" >> output/${md_file/.md}.html
