@@ -93,9 +93,13 @@ class: center, middle, inverse
  * What it does
  * How it works
  * Getting started
+---
+# Agenda
 
 ## CentOS infrastructure
- * TODO
+ * Why ARA
+ * How we consume it
+ * ConfigManagement SIG work
 
 ---
 ![ara-logo](img/ara-logo.png)
@@ -199,6 +203,76 @@ Stay up to date or come chat:
 - **Twitter**: https://twitter.com/RecordsAnsible
 - **IRC**: #ara on freenode
 - **Slack**: Invite in the README (*bridged to IRC!*)
+
+---
+# CentOS Infra 
+## How it started
+
+* Need to have central ansible station
+* Good to have reports (// foreman dashboard for puppet execution)
+
+---
+# CentOS ConfigManagement SIG work
+ * rebuild ara (client part)
+--
+
+ * rebuild needed pkgs non in EPEL8
+--
+
+ * rebuild ara with server support
+
+---
+# CentOS Infra
+## We started with container
+https://github.com/ansible-community/ara/blob/master/contrib/container-images/centos8-pypi.sh
+
+```bash
+podman pull quay.io/recordsansible/ara-api:centos8-pypi-latest
+
+```
+More info: https://github.com/CentOS/ansible-role-ansible-host/blob/master/defaults/main.yml#L62
+
+---
+# CentOS Infra
+## rpm variant (now that we have it)
+
+```bash
+sudo dnf install -y centos-release-ansible-29
+sudo dnf install -y ansible ara python3-ara-server python3-gunicorn
+```
+
+---
+# CentOS Infra
+## systemd unit file (not provided by ara pkg)
+
+```bash
+[Unit]
+Description=ARA api service
+DefaultDependencies=no
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User=ara
+Group=ara
+WorkingDirectory=/home/ara/.ara
+ExecStart=/usr/bin/gunicorn --workers={{ ansible_ara_workers }}  ara.server.wsgi
+ExecStop=/bin/kill -s TERM $MAINPID
+```
+---
+# CentOS infra
+## KiSS (sqlite)
+
+```bash
+-rw-r--r--.  1 ara  ara  5.2G May 10 12:55 ara.sqlite
+```
+---
+class: left, top
+# CentOS Infra
+.left[![ara-centos](img/centos-ara-host.png)]
 
 ---
 class: center, middle
