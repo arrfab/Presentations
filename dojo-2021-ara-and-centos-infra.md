@@ -1,6 +1,6 @@
 # Keeping track of CentOS infrastructure deployments
 ## (with Ansible and ARA)
-### Fabian Arrotin && David Moreau-Simard
+### David Moreau-Simard / Fabian Arrotin
 
 May 2021 @ CentOS Dojo
 
@@ -10,11 +10,12 @@ These are some notes presented in presenter mode and not on screen
 ---
 class: center, middle, inverse
 
+## /whois dmsimard
+##### dmsimard@redhat.com = ['ansible', 'ops', 'community', 'tooling', 'ci/cd']
+
 ## /whois arrfab
 ##### arrfab@centos.org = ['ops', 'infra', 'floor sweeper']
 
-## /whois dmsimard
-##### dmsimard@redhat.com = ['ansible', 'ops', 'community', 'tooling', 'ci/cd']
 
 ---
 # Agenda
