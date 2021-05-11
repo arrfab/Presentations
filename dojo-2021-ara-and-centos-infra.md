@@ -139,11 +139,54 @@ Stay up to date or come chat:
 ---
 # CentOS Infra 
 ## How it started
+### Background/context
+ * Coming from puppet
+ * Using Foreman as ENC and dashboard
+ * ....
 
-* Need to have central ansible station
+---
+# CentOS Infra
+## How it started
+* CentOS infra *was* migrated to Ansible from puppet
+* Need to have central ansible station (regular desired state check)
 * Good to have reports (// foreman dashboard for puppet execution)
 
 ---
+# CentOS Infra
+## KiSS !
+
+Non "invasive" add-ons (like mitogen as an example):
+
+```bash
+{% if item.use_mitogen %}
+strategy_plugins = {{ item.base_path }}/mitogen/ansible_mitogen/plugins/strategy
+strategy = mitogen_linear
+{% else %}
+strategy = linear
+{% endif %}
+```
+
+---
+# CentOS Infra
+## ARA *is*  non invasive
+
+```bash
+{% if ansible_use_ara %}
+callback_plugins=/usr/lib/python3.6/site-packages/ara/plugins/callback
+action_plugins=/usr/lib/python3.6/site-packages/ara/plugins/action
+lookup_plugins=/usr/lib/python3.6/site-packages/ara/plugins/lookup
+{% endif %}
+
+{% if ansible_use_ara %}
+[ara]
+api_client = http
+api_server = http://127.0.0.1:8000
+default_labels = {{ item.name }}
+{% endif %}
+```
+
+---
+
 # CentOS ConfigManagement SIG work
  * rebuild ara (client part)
 --
@@ -163,6 +206,54 @@ podman pull quay.io/recordsansible/ara-api:centos8-pypi-latest
 
 ```
 More info: https://github.com/CentOS/ansible-role-ansible-host/blob/master/defaults/main.yml#L62
+
+---
+```
+ara
+ python3-ara-server
+ python3-django : python-django-2.2.9-1.el8 : tag-build DONE
+ python3-django-cors-headers : built in common : DONE
+ python3-django-health-check DONE
+ python3-django-rest-framework : built in common : DONE
+ python3-dynaconf' (dynaconf) : DONE
+    python3-box DONE
+    python3-dotenv DONE
+      python-sh DONE (fixed with carl's patch)
+      python-ipython temporary DONE
+        python3-backcall DONE
+        python3-ipykernel'  IP
+        python3-jedi DONE
+        python3-jupyter-client' DONE but needs to be done again after
+          python-ipython-doc (bypassed for now)
+          python-ipykernel old 4.5.2, so then bump
+        python3-matplotlib' tag-build DONE
+        python3-nbformat' DONE
+          python-jupiter-core DONE
+           python-sphinxcontrib-github-alt DONE
+            python-flit-1.3-4.el8 tag-build DONE
+        python3-pickleshare DONE
+        python3-prompt-toolkit DONE
+          python3-wcwidth tag build DONE
+        python3-simplegeneric' tag-build DONE
+        python3-testpath' tag-build DONE
+        python3-tornado  tag build DONE
+        python3-traitlets DONE
+          python3-ipython_genutils DONE
+        python3-zmq python3-zmq-tests  : tag build DONE
+    python3-toml DONE
+ python3-factory-boy : built in common : DONE
+ python3-faker DONE
+   pytest-runner : python-pytest-runner-4.0-8.el8 : tag-build DONE
+ python3-pbr python-pbr-5.4.3-2.el8 tag-build DONE
+ python3-sphinxcontrib-programoutput python-sphinxcontrib-programoutput-0.14-4.el8 tag-build DONE
+ python3-tzlocal : python-tzlocal-1.5.1-9.el8 tag-build DONE
+ python3-whitenoise DONE
+    python-brotli brotli-1.0.6-1.el8  : tag-build DONE
+```
+
+---
+# RPM build in progress ....
+.left[![ara-centos](img/a-few-moments-later.jpeg)]
 
 ---
 # CentOS Infra
