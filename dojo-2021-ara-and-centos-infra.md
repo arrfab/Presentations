@@ -146,7 +146,19 @@ Stay up to date or come chat:
 
 ---
 # CentOS Infra
-## How it started
+## Ansible migration, the beginning
+* inventories are git repos (different environments/teams/projects) 
+	* git-crypt
+  * ansible-vault
+* playbooks and requirements.yml files for all inventories is a git repo
+* one requirement.yml per inventory/project => "cherry-picking"
+* each role is a git repo
+
+More info on https://github.com/centos/ansible-infra-playbooks
+
+---
+# CentOS Infra
+## What about reporting ?
 * CentOS infra *was* migrated to Ansible from puppet
 * Need to have central ansible station (regular desired state check)
 * Good to have reports (// foreman dashboard for puppet execution)
@@ -297,6 +309,25 @@ class: left, top
 # CentOS Infra
 .left[![ara-centos](img/centos-ara-host.png)]
 
+---
+# CentOS Infra
+## cli output
+
+```bash
+ara playbook list --status failed --limit 5 --format value -c id -c path -c started
+180208 ...tobisna-centos/playbooks/adhoc-refresh-facts.yml 2021-05-14T07:15:02.023003Z
+180194 ...var/lib/tobisna-centos/playbooks/role-kvm-host.yml 2021-05-14T06:14:02.814713Z
+180142 ...tobisna-centos/playbooks/adhoc-refresh-facts.yml 2021-05-14T05:15:02.049694Z
+180120 ...tobisna-centos/playbooks/adhoc-refresh-facts.yml 2021-05-14T04:15:02.104483Z
+180119 ...tobisna-centos/playbooks/adhoc-refresh-facts.yml 2021-05-14T03:15:02.524431Z
+
+```
+--
+
+```bash
+echo tobisna|rev
+ansibot
+```
 ---
 class: center, middle
 # Thank you !

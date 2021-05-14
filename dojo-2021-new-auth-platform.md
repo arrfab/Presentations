@@ -147,8 +147,6 @@ Supported Linux distributions: CentOS 8/8-s , Fedora 32,33,34
 
 ```bash
 sudo dnf install -y epel-release # only if your on CentOS 8 / 8-stream
-sudo dnf install 'dnf-command(copr)'
-sudo dnf copr enable -y arrfab/fasjson-client 
 sudo dnf install -y centos-packager
 ```
 
