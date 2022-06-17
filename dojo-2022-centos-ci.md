@@ -1,0 +1,211 @@
+
+# CentOS Dojo / June 2022
+## New CentOS CI infra 
+### Fabian Arrotin / Nils Philippsen
+
+???
+These are some notes presented in presenter mode and not on screen
+
+---
+class: center, middle, inverse
+
+# /whois arrfab 
+#### ['hybrid clown','floor sweeper'] @ centos.org
+
+# /whois nils
+#### SW Eng @ Red Hat CPE
+
+???
+Have worn too many hats, keep this simple.
+---
+# Agenda
+
+## New CentOS CI infra 
+ * Intro and why we have to migrate
+ * Duffy v3 (Nils)
+ * How we'll migrate it
+ * Benefits for CentOS and Fedora
+
+---
+# A little bit of history ! (~2014)
+
+---
+background-image: url(img/history.jpg)
+
+ 
+???
+single jenkins + agents
+duffy to deploy centos 6 x86, and then adding new releases, aarch64/ppc64le
+---
+# Why we have to migrate
+
+## #1 Duffy v2 written in python 2 .... 
+---
+# Why we have to migrate
+
+## #2 Seamicro hardware out-of-warranty 
+#### (x86_64 hardware from circa 2014)
+
+```bash
+MariaDB [duffy]> select sum(used_count) from stock;
++-----------------+
+| sum(used_count) |
++-----------------+
+|         1572703 |
++-----------------+
+1 row in set (0.00 sec)
+```
+---
+# Why we have to migrate
+
+![move](img/moving.png)
+
+---
+background-image: url(img/cloud-computing.jpg)
+
+```bash
+echo 'Hybrid Cloud [TM] strategy !'
+```
+---
+# What we'll migrate
+
+ * Duffy ephemeral infra (x86 and aarch64 test machines)
+--
+
+ * Duffy ephemeral ppc64le nodes still "on premises"
+--
+
+ * Artifacts storage box (aka https://artifacts.ci.centos.org)
+--
+
+ * OpenShift (ocp.ci.centos.org)
+
+---
+background-image: url(img/duffy-aws.drawio.png)
+
+
+---
+# Duffy v3 – What's new?
+
+## Technically, Everything.
+
+???
+That one should pay off all my CPE pun debts.
+
+---
+
+# Duffy v3 New Features
+
+- Different kinds of nodes in one request
+
+--
+- Supporting different provisioning systems side by side
+
+--
+- CRUD/REST API with automatic interactive documentation
+
+--
+- A *metaclient* service translating between legacy API clients and the new
+  API
+
+???
+Mention Ansible as the mechanism to interface with whatever provisioning
+backend.
+
+Metaclient: Enable a transition phase, existing workloads don't have to be
+updated right away.
+
+---
+
+# Conceptual Differences in Duffy v3
+
+Duffy v3 is agnostic about actual node properties. 
+Instead, nodes with like properties are grouped into *pools*.
+
+???
+Pool identifiers have no meaning to Duffy, they are merely a convention
+between operators and users.
+
+---
+class: left, top
+background-image: url(img/duffy-components.png)
+# Duffy v3 Components
+
+???
+* Web API servers (current & legacy)
+* Task Workers
+* Client (CLI & Python module)
+
+---
+
+# Duffy v3 Session Walkthrough
+
+```bash
+$ duffy client --format=flat request-session pool=f36-x86_64,quantity=1
+session_id=40 active=TRUE created_at='2022-06-14 12:52:52.694251+00:00' retired_at= pool='f36-x86_64' hostname='wombat.tiptoe.de' ipaddr='10.0.0.2'
+...
+$ duffy client --format=flat retire-session 40
+session_id=40 active=FALSE created_at='2022-06-14 12:52:52.694251+00:00' retired_at='2022-06-14 12:58:31.235387+00:00' pool='f36-x86_64' hostname='wombat.tiptoe.de' ipaddr='10.0.0.2'
+```
+
+---
+
+# Duffy v3 Behind the Scenes
+
+- CPE development project in Q4/21 and Q1/22, team: Akashdeep Dhar, Ben Capper, Vipul Siddarth, Nils Philippsen
+
+--
+- Actively maintained dependency stack (FastAPI, Pydantic, SQLAlchemy,
+  PostgreSQL, Celery)
+
+--
+- Fully tested code base
+
+--
+- Installable from PyPi:
+  https://pypi.org/project/duffy/
+
+--
+- Code repository:
+  https://github.com/CentOS/duffy/
+
+???
+Not installable as RPM yet.
+---
+# How we'll migrate
+## Phase 1 - Deploy Duffy V3 (August 2022)
+
+  * legacy/compatibility mode
+  * New Duffy API endpoint is available
+
+
+---
+# How we'll migrate
+## Phase 2 - Hybrid Cloud (October 2022)
+
+ * Legacy/compatibility API => EC2 by default
+ * Bare metal options will be available through new API only
+ * Legacy seamicro and aarch64/ThunderX hardware is decommissioned
+ * Only remaining "on premises" option is ppc64le (local cloud)
+
+
+---
+# How we'll migrate
+## Phase 3 - Decommission (December 2022)
+
+  * Legacy/compatibility API deprecated  
+  * "Hybrid Cloud !" :  EC2 for aarch64/x86_64 and on premises cloud for ppc64le 
+
+---
+# How we'll migrate
+## TBD => OpenShift (spike)
+![Investigation](img/investigation.jpg)
+---
+class: center, middle
+# Q&A 
+
+---
+class: center, middle
+![thanks](img/thanks.png)
+###### Images under [Pixabay License](https://pixabay.com/service/terms/)
+
