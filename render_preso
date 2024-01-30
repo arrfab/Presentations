@@ -1,11 +1,12 @@
 #!/bin/bash
 RATIO=${2:-"4:3"}
+TEMPLATE=${3:-"remarkjs"}
 
 usage () {
   echo "You need to call this script like this :"
-  echo "$0 my-preso.md"
-  echo "Optionally pass a second argument for the ratio (4:3 or 16:9) :"
-  echo "$0 my-preso.md 16:9"
+  echo "$0 my-preso.md <ratio> <template>"
+  echo "ratio can be 4:3 or 16:9"
+  echo "template can be 'remarkjs' or 'connect'"
 }
 
 if [ -z "$1" ] ; then
@@ -14,7 +15,7 @@ if [ -z "$1" ] ; then
 fi
 
 md_file="$1"
-echo rendering RemarkJS html output file to output/${md_file/.md}.html
-cat remarkjs/remarkjs-header.html > output/${md_file/.md}.html
+echo rendering RemarkJS html output file to output/${md_file/.md}.html using remarkjs/${TEMPLATE}-header.html
+cat remarkjs/${TEMPLATE}-header.html > output/${md_file/.md}.html
 cat $md_file >> output/${md_file/.md}.html
-cat remarkjs/remarkjs-footer.html | sed -e "s/%RATIO%/${RATIO}/" >> output/${md_file/.md}.html
+cat remarkjs/${TEMPLATE}-footer.html | sed -e "s/%RATIO%/${RATIO}/" >> output/${md_file/.md}.html
