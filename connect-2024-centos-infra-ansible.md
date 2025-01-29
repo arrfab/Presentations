@@ -1,5 +1,6 @@
 template: title
 
+  
 # CentOS Connect / February 2024
 ## Ansible usage in CentOS Infra
 ### Fabian Arrotin 
