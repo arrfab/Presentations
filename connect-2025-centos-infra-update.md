@@ -34,24 +34,29 @@ IA slide FTW !
  * Supports CentOS Stream infra (and builds delivery)
  * Supports community infra:
   * CBS koji builders (SIGs)
-  * mirror network
-  * Website / mailing-lists / CI
+  * CI infra (Duffy / Openshift)
+  * Mirrors and CDN network
+  * Website / mailing-lists 
 
 ---
-# Reminder
+# Back to Basics ! 
 
 ![infra-lifecycle](img/devops-loop.png)
 
 ---
-# Reminder
+# Loopytiloopyti-Loop ! [TM]
 
- * Design
+ * Design (requirements gathering)
  * Build / Deploy
  * Maintain / Operate
- * Decommission
+ * ( Decommission )
+
+
+???
+Question : which one is the one that often overlooked and underrated ?
 
 ---
-# Maintenance
+# Maintain & Operate
 
 ![maintenance](img/maintenance.jpg)
 #### often underrated [TM]
@@ -72,36 +77,39 @@ IA slide FTW !
 ## Community Build System (cbs)
 
   - koji update to 1.34
-  - (reinstalled builders to el9)
+    - (reinstalled builders to el9)
   - tickets for tags
   - onboarded c10s (and epel10), including rpmautospec
   - newer/faster/better/stronger aarch64 build hosts
+
 ---
 # Maintain / Operate
 ## c7/c8s EOL
 
   - migrated ansible host[s] to el9 (ansible-core 2.14 for long time)
   - chassis workload split (out of warranty , old ocp / ci infra)
+  - reinstalled a *bunch* of hosts with el9 
 
 ---
 # Maintain / Operate
 ## c10s onboarding
 
   - c10s tags in cbs
-  - debuginfod : ensuring c10s support
-  - duffy / CI : adding c10s in pools 
+  - https://debuginfod.centos.org : ensuring c10s support
+  - https://duffy.ci.centos.org / CI : adding c10s in pools 
 
 ---
 # Maintain / Operate
 ## BAU
 
-  - backups
+  - Openshift updates
+  - backups / monitoring
   - mirror cdn
-  - relationship with sponsors
+  - relationship with sponsors ...
 
 ---
 # Maintain / Operate
-## sponsors
+## Sponsors !
 
   - Kudos to 19 sponsors in 2024 for refreshed hardware ! (https://blog.centos.org/2024/09/thank-you-all-centos-sponsors/)
 
@@ -138,9 +146,14 @@ Michel, Michal, Jonathan and epel folks
   - dc move[s] (impacted two times) #1579
     - hybrid (more aws usage)
     - more sinergy with Fedora infra ...
-    - secureboot solution for SIGs (no ticket yet ?)
+    - .... secureboot solution for SIGs (no ticket yet ?) 
+
+---
+# Roadmap 2025 (part two)
+
   - pagure => gitlab migration ? (no ticket yet)
     - investigation
+  - Stream CoreOS/OKD deliverables pushed to centos mirror network (new from yesterday !)
   - migrating el8 to el9/el10 (nftables #1526)
 
 ---
